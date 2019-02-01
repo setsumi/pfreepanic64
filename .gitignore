@@ -1,0 +1,14 @@
+# Intermediate Build files
+/__astcache
+/__history
+/__recovery
+/Debug
+/Release
+
+#/**/*.~*
+#/**/*.#*
+
+# Output files
+#/**/*.dll
+#/**/*.lib
+#/**/*.exe
