@@ -27,6 +27,7 @@ __published:	// IDE-managed Components
 	TEdit *edtOSDDuration;
 	TUpDown *udOSDDuration;
 	TLabel *Label2;
+	TTimer *TimerConsole;
 	void __fastcall FormDestroy(TObject *Sender);
 	void __fastcall edtKeyEnter(TObject *Sender);
 	void __fastcall edtKeyExit(TObject *Sender);
@@ -35,6 +36,7 @@ __published:	// IDE-managed Components
 	void __fastcall btnInfoClick(TObject *Sender);
 	void __fastcall btnOSDHelpClick(TObject *Sender);
 	void __fastcall btnOSDTestClick(TObject *Sender);
+	void __fastcall TimerConsoleTimer(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	void Load();

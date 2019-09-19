@@ -149,4 +149,11 @@ object Form1: TForm1
       TabOrder = 4
     end
   end
+  object TimerConsole: TTimer
+    Enabled = False
+    Interval = 200
+    OnTimer = TimerConsoleTimer
+    Left = 336
+    Top = 24
+  end
 end

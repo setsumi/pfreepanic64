@@ -7,6 +7,8 @@
 #include <Psapi.h>
 #include <Mmsystem.h>
 #include <Registry.hpp>
+#include <stdio.h>  // printf
+#include <io.h>     // _open_osfhandle, dup2
 
 #pragma hdrstop
 
@@ -38,27 +40,135 @@ int Game = -1;
 int SuspendProcess = 1;
 TStringList *pGamesList;
 TList *pTermList;
-
 tOSD *pOSD;
 
 #define MODULE_NAME L"museca.dll"
-#define MEM_OFFSET  0xC00 // offset padding relative to .dll file
+#define MEM_OFFSET 0xC00 // offset padding relative to .dll file
+#define CONSOLE_TRIGGER L"TITLEDEMO_FLOW"
 
-//ULONG data0_offset[] = { 0x0, 0x0 };
-ULONG data1_offset[] = { 0x17E587 };
-#define DATA1_SIZE 6
-//BYTE pf_off0[] = { 0x00, 0x00 };
-BYTE pf_off1[1][DATA1_SIZE] = {
-//		{ 0x8B, 0x83, 0x64, 0x10, 0x00, 0x00, 0x8D, 0x48, 0x01, 0x83, 0xF9, 0x04, 0x56, 0x57, 0x7F, 0x52 },
-		{ 0xFF, 0x83, 0x48, 0x14, 0x00, 0x00 }
-	};
-//BYTE pf_on0[] = { 0x02, 0x02 };
-BYTE pf_on1[1][DATA1_SIZE] = {
-//		{ 0xB8, 0x01, 0x00, 0x00, 0x00, 0x89, 0x83, 0x64, 0x10, 0x00, 0x00, 0x90, 0x56, 0x57, 0x90, 0x90 },
-		{ 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }
-	};
+ULONG data0_offset[] = { 0x17E587 };
+ULONG data1_offset[] = { 0x17E4DF };
+ULONG data2_offset[] = { 0x17E060 };
+#define DATA0_SIZE 6
+#define DATA1_SIZE 2
+#define DATA2_SIZE 6
 
+BYTE pf_off0[][DATA0_SIZE] = { 0xFF, 0x83, 0x48, 0x14, 0x00, 0x00 };
+BYTE pf_off1[][DATA1_SIZE] = { 0x7F, 0x08 };
+BYTE pf_off2[][DATA2_SIZE] = { 0x8B, 0x81, 0x48, 0x14, 0x00, 0x00 };
 
+BYTE pf_on0[][DATA0_SIZE] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+BYTE pf_on1[][DATA1_SIZE] = { 0x90, 0x90 };
+BYTE pf_on2[][DATA2_SIZE] = { 0xB8, 0x03, 0x00, 0x00, 0x00, 0x90 };
+
+HANDLE hConIn;
+HANDLE hConOut;
+HANDLE hConErr;
+const COORD origin = { 0, 0 };
+COORD lastpos = { 0, 0 };
+
+//---------------------------------------------------------------------------
+void TogglePFree(bool off = false);
+
+//---------------------------------------------------------------------------
+bool GrabConsole(DWORD procID)
+{
+	int fd0, fd1, fd2;
+	if (!AttachConsole(procID))
+		return false;
+	hConIn = GetStdHandle(STD_INPUT_HANDLE);
+	fd0 = _open_osfhandle((intptr_t)hConIn, 0);
+	dup2(fd0, 0);
+	hConOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	fd1 = _open_osfhandle((intptr_t)hConOut, 0);
+	dup2(fd1, 1);
+	hConErr = GetStdHandle(STD_ERROR_HANDLE);
+	fd2 = _open_osfhandle((intptr_t)hConErr, 0);
+	dup2(fd2, 2);
+
+	lastpos.X = 0;
+    lastpos.Y = 0;
+    Form1->TimerConsole->Enabled = true;
+	return true;
+}
+//---------------------------------------------------------------------------
+void ReleaseConsole()
+{
+    Form1->TimerConsole->Enabled = false;
+	FreeConsole();
+}
+//---------------------------------------------------------------------------
+void PollConsole(HANDLE hConsole)
+{
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	DWORD dwDummy;
+	// get screen buffer state
+	GetConsoleScreenBufferInfo(hConsole, &csbi);
+	int lineWidth = csbi.dwSize.X;
+
+	if ((csbi.dwCursorPosition.X == lastpos.X) && (csbi.dwCursorPosition.Y == lastpos.Y))
+		return; // text cursor did not move, do nothing
+	else
+	{
+		DWORD count = (csbi.dwCursorPosition.Y-lastpos.Y)*lineWidth+csbi.dwCursorPosition.X-lastpos.X;
+		// read newly output characters starting from last cursor position
+		LPTSTR buffer = (LPTSTR) LocalAlloc(0, count*sizeof(TCHAR)+2);
+		ReadConsoleOutputCharacter(hConsole, buffer, count, lastpos, &count);
+		// fill screen buffer with zeroes
+		FillConsoleOutputCharacter(hConsole, '\0', count, lastpos, &dwDummy);
+
+		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+		lastpos = csbi.dwCursorPosition;
+		GetConsoleScreenBufferInfo(hConsole, &csbi);
+		if ((csbi.dwCursorPosition.X == lastpos.X) && (csbi.dwCursorPosition.Y == lastpos.Y))
+		{ // text cursor did not move since this treatment, hurry to reset it to home
+			SetConsoleCursorPosition(hConsole, origin);
+			lastpos = origin;
+		}
+		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+
+		// scan screen buffer and transmit character to real output handle
+		LPTSTR scan = buffer;
+		UnicodeString text;
+		do
+		{
+			if (*scan)
+			{
+				DWORD len = 1;
+				while (scan[len] && (len < count))
+					len++;
+				//WriteFile(hOutput, scan, len, &dwDummy, NULL);
+				TCHAR term = scan[len];
+				scan[len] = 0;
+				text += scan;
+				scan[len] = term;
+
+				scan += len;
+				count -= len;
+			}
+			else
+			{
+				DWORD len = 1;
+				while (!scan[len] && (len < count))
+					len++;
+				scan += len;
+				count -= len;
+				len = (len+lineWidth-1)/lineWidth;
+				for (;len;len--) {
+					//WriteFile(hOutput, "\r\n", 2, &dwDummy, NULL);
+					text += L"\r\n";
+				}
+			}
+		} while (count);
+		LocalFree(buffer);
+
+		if (text.Pos(CONSOLE_TRIGGER)) {
+			TogglePFree(true);
+		}
+	}
+}
+
+//---------------------------------------------------------------------------
 UnicodeString WinFormatError(DWORD errNo)
 {
 	LPVOID lpMsgBuf = NULL;
@@ -118,18 +228,22 @@ HWND FindTermWnd()
 }
 
 //---------------------------------------------------------------------------
-void TogglePFree()
+void TogglePFree(bool off)
 {
 	Working = true;
+	ReleaseConsole();
 	Form1->Memo1->Clear();
 	UnicodeString txt;
+	UnicodeString txt1;
+	UnicodeString txt2;
 
 	HANDLE hProc = NULL;
 	HWND hWnd = NULL;
 	DWORD procID = NULL;
 
-	//BYTE data0 = 1;
+	BYTE data0[DATA0_SIZE];
 	BYTE data1[DATA1_SIZE];
+	BYTE data2[DATA2_SIZE];
 
 	HMODULE hMods[1024];
 	DWORD cbNeeded;
@@ -205,63 +319,84 @@ void TogglePFree()
 	Form1->Memo1->Lines->Add(txt);
 
 	// read current data
-//	if (!ReadProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], &data0, 1, NULL)) {
-//		WinError(L"Read process memory failed");
-//		goto getout;
-//	}
+	if (!ReadProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], data0, DATA0_SIZE, NULL)) {
+		WinError(L"Read process memory failed");
+		goto getout;
+	}
 	if (!ReadProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data1_offset[Game], data1, DATA1_SIZE, NULL)) {
+		WinError(L"Read process memory failed");
+		goto getout;
+	}
+	if (!ReadProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data2_offset[Game], data2, DATA2_SIZE, NULL)) {
 		WinError(L"Read process memory failed");
 		goto getout;
 	}
 
 	// OFF test
-	if (/*data0 == pf_off0[Game] &&*/ memcmp(data1, pf_off1[Game], DATA1_SIZE) == 0)
+	if (memcmp(data1, pf_off1[Game], DATA1_SIZE) == 0)
 	{
-		// write PFree ON
-//		if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], pf_on0 + Game, 1, NULL)) {
-//			WinError(L"Write process memory failed");
-//			goto getout;
-//		}
-		if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data1_offset[Game], pf_on1[Game], DATA1_SIZE, NULL)) {
-			WinError(L"Write process memory failed");
-			goto getout;
+		if (off) { // Turn off patches 0 and 2 after patch 1 was turned off before.
+			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], pf_off0[Game], DATA0_SIZE, NULL)) {
+				WinError(L"Write process memory failed");
+				goto getout;
+			}
+			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data2_offset[Game], pf_off2[Game], DATA2_SIZE, NULL)) {
+				WinError(L"Write process memory failed");
+				goto getout;
+			}
+			// notify
+			Form1->Caption = L"3-Song Mode";
+			if (Form1->chkOSDEnabled->Checked)
+				pOSD->SendMessage(L"3-Song Mode", Form1->udOSDDuration->Position);
+		} else {
+			// write PFree ON
+			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], pf_on0[Game], DATA0_SIZE, NULL)) {
+				WinError(L"Write process memory failed");
+				goto getout;
+			}
+			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data1_offset[Game], pf_on1[Game], DATA1_SIZE, NULL)) {
+				WinError(L"Write process memory failed");
+				goto getout;
+			}
+			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data2_offset[Game], pf_on2[Game], DATA2_SIZE, NULL)) {
+				WinError(L"Write process memory failed");
+				goto getout;
+			}
+			// notify
+			Form1->Caption = L"Pfree Mode";
+			if (Form1->chkOSDEnabled->Checked)
+				pOSD->SendMessage(L"Pfree Mode", Form1->udOSDDuration->Position);
 		}
-		// notify
-//		PlaySound((ExtractFilePath(Application->ExeName) + (Form1->rdgVoice->ItemIndex == 0 ? L"on-eng.wav" : L"on.wav")).c_str(), NULL, SND_FILENAME|SND_ASYNC);
-		Form1->Caption = L"PFREE";
-		if (Form1->chkOSDEnabled->Checked)
-			pOSD->SendMessage(L"Premium Free Mode", Form1->udOSDDuration->Position);
 	} else
 	// ON test
-	if (/*data0 == pf_on0[Game] &&*/ memcmp(data1, pf_on1[Game], DATA1_SIZE) == 0)
+	if (memcmp(data1, pf_on1[Game], DATA1_SIZE) == 0)
 	{
-		// write PFree OFF
-//		if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], pf_off0 + Game, 1, NULL)) {
-//			WinError(L"Write process memory failed");
-//			goto getout;
-//		}
+		// write PFree OFF  // Don't turn off patches 0 and 2, or the game will go back to the 1st song instead of ending.
 		if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data1_offset[Game], pf_off1[Game], DATA1_SIZE, NULL)) {
 			WinError(L"Write process memory failed");
 			goto getout;
 		}
+		GrabConsole(procID);
 		// notify
-//		PlaySound((ExtractFilePath(Application->ExeName) + (Form1->rdgVoice->ItemIndex == 0 ? L"off-eng.wav" : L"off.wav")).c_str(), NULL, SND_FILENAME|SND_ASYNC);
-		Form1->Caption = L"NORMAL";
+		Form1->Caption = L"1-Song Mode";
 		if (Form1->chkOSDEnabled->Checked)
-			pOSD->SendMessage(L"Credit Mode", Form1->udOSDDuration->Position);
+			pOSD->SendMessage(L"1-Song Mode", Form1->udOSDDuration->Position);
 	} else
 	{
 		Error(L"Invalid game data. Press [Information...] for supported game version.");
 		goto getout;
 	}
-    //debug
-	txt.sprintf(L"data: %02X %02X %02X %02X %02X %02X", data1[0],data1[1],data1[2],data1[3],data1[4],data1[5]);
 	Form1->MemoResetStyle();
-	Form1->Memo1->Lines->Add(txt);
+	//debug
+//	txt.sprintf(L"data0: %02X %02X %02X %02X %02X %02X", data0[0],data0[1],data0[2],data0[3],data0[4],data0[5]);
+//	txt1.sprintf(L"data1: %02X %02X", data1[0],data1[1]);
+//	txt2.sprintf(L"data2: %02X %02X %02X %02X %02X %02X", data2[0],data2[1],data2[2],data2[3],data2[4],data2[5]);
+//	Form1->Memo1->Lines->Add(txt);
+//	Form1->Memo1->Lines->Add(txt1);
+//	Form1->Memo1->Lines->Add(txt2);
 
 getout:
 	// cleanup
-	if (hWnd)  CloseHandle(hWnd);
 	if (hProc) CloseHandle(hProc);
 
 	if (SuspendProcess && procID)
@@ -283,6 +418,8 @@ void TerminateGame()
 	if (!hWnd) {
 		goto getout2;
 	}
+	// Sever link with game
+	ReleaseConsole();
 
 	// get process ID
 	if (!GetWindowThreadProcessId(hWnd, &procID)) {
@@ -306,7 +443,6 @@ void TerminateGame()
 
 getout2:
 	// cleanup
-	if (hWnd)  CloseHandle(hWnd);
 	if (hProc) CloseHandle(hProc);
 
 	Terminating = false;
@@ -494,6 +630,12 @@ void __fastcall TForm1::btnOSDHelpClick(TObject *Sender)
 		"\t5. Test message should appear in game\n"
 		"\nOSD message duration is in frames (e.g. 60 for 1 second)"
 		);
+}
+
+//---------------------------------------------------------------------------
+void __fastcall TForm1::TimerConsoleTimer(TObject *Sender)
+{
+	PollConsole(hConOut);
 }
 
 //---------------------------------------------------------------------------
