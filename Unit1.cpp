@@ -44,7 +44,14 @@ tOSD *pOSD;
 
 #define MODULE_NAME L"museca.dll"
 #define MEM_OFFSET 0xC00 // offset padding relative to .dll file
-#define CONSOLE_TRIGGER L"TITLEDEMO_FLOW"
+
+#define CONSOLE_TRIGGER0 L"TITLEDEMO_FLOW"
+#define CONSOLE_TRIGGER1 L"WARNING_SCENE"
+#define CONSOLE_TRIGGER2 L"TITLE_SCENE"
+#define CONSOLE_TRIGGER3 L"DEMO_GAME"
+#define CONSOLE_TRIGGER4 L"CARD_ENTRY_SCENE"
+#define CONSOLE_TRIGGER5 L"CARD_ENTRY_JOIN_SCENE"
+#define CONSOLE_TRIGGER6 L"CARD_ENTRY_ERROREND_SCENE"
 
 ULONG data0_offset[] = { 0x17E587 };
 ULONG data1_offset[] = { 0x17E4DF };
@@ -162,7 +169,13 @@ void PollConsole(HANDLE hConsole)
 		} while (count);
 		LocalFree(buffer);
 
-		if (text.Pos(CONSOLE_TRIGGER)) {
+		if (text.Pos(CONSOLE_TRIGGER0) ||
+			text.Pos(CONSOLE_TRIGGER1) ||
+			text.Pos(CONSOLE_TRIGGER2) ||
+			text.Pos(CONSOLE_TRIGGER3) ||
+			text.Pos(CONSOLE_TRIGGER4) ||
+			text.Pos(CONSOLE_TRIGGER5) ||
+			text.Pos(CONSOLE_TRIGGER6)) {
 			TogglePFree(true);
 		}
 	}
@@ -595,6 +608,9 @@ void __fastcall TForm1::btnInfoClick(TObject *Sender)
 		"\t4. To change mode press assigned key\n"
 		"\t    (usually while in song selection screen or pre-song lobby)\n"
 		"\t5. PROFIT\n\n"
+		"\t(!) Make sure game's console window is present and have decent size\n"
+		"\tat least 80x25 characters.\n"
+		"\n"
 		"PFree mode is supported on:\n"
 		"\tMUSECA 1+1/2 (2018-07-30)\n\n"
 		"Terminate game is supported on:\n"
