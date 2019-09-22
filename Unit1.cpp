@@ -68,9 +68,7 @@ BYTE pf_on0[][DATA0_SIZE] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
 BYTE pf_on1[][DATA1_SIZE] = { 0x90, 0x90 };
 BYTE pf_on2[][DATA2_SIZE] = { 0xB8, 0x03, 0x00, 0x00, 0x00, 0x90 };
 
-HANDLE hConIn;
 HANDLE hConOut;
-HANDLE hConErr;
 const COORD origin = { 0, 0 };
 COORD lastpos = { 0, 0 };
 
@@ -80,21 +78,18 @@ void TogglePFree(bool off = false);
 //---------------------------------------------------------------------------
 bool GrabConsole(DWORD procID)
 {
-	int fd0, fd1, fd2;
 	if (!AttachConsole(procID))
 		return false;
-	hConIn = GetStdHandle(STD_INPUT_HANDLE);
-	fd0 = _open_osfhandle((intptr_t)hConIn, 0);
-	dup2(fd0, 0);
 	hConOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	fd1 = _open_osfhandle((intptr_t)hConOut, 0);
-	dup2(fd1, 1);
-	hConErr = GetStdHandle(STD_ERROR_HANDLE);
-	fd2 = _open_osfhandle((intptr_t)hConErr, 0);
-	dup2(fd2, 2);
+
+	// Clear console to avoid false triggering on old logs
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	DWORD dwDummy;
+	GetConsoleScreenBufferInfo(hConOut, &csbi); // get screen buffer state
+	FillConsoleOutputCharacter(hConOut, '\0', csbi.dwSize.X*csbi.dwSize.Y, origin, &dwDummy); // fill screen buffer with zeroes
 
 	lastpos.X = 0;
-    lastpos.Y = 0;
+	lastpos.Y = 0;
     Form1->TimerConsole->Enabled = true;
 	return true;
 }

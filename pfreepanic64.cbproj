@@ -2,7 +2,7 @@
     <PropertyGroup>
         <ProjectGuid>{EA6FCA28-F808-460C-A4BF-D507142F8493}</ProjectGuid>
         <ProjectVersion>18.4</ProjectVersion>
-        <MainSource>pfreepanic.cpp</MainSource>
+        <MainSource>pfreepanic64.cpp</MainSource>
         <Config Condition="'$(Config)'==''">Release</Config>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
@@ -70,7 +70,7 @@
         <ILINK_LibraryPath>C:\MAIN\BC\pfree-panic;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <BCC_wpar>false</BCC_wpar>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <SanitizedProjectName>pfreepanic</SanitizedProjectName>
+        <SanitizedProjectName>pfreepanic64</SanitizedProjectName>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MinorVer>3</VerInfo_MinorVer>
@@ -159,10 +159,11 @@
             <DependentOn>osd.h</DependentOn>
             <BuildOrder>4</BuildOrder>
         </CppCompile>
-        <CppCompile Include="pfreepanic.cpp">
+        <CppCompile Include="pfreepanic64.cpp">
             <BuildOrder>0</BuildOrder>
         </CppCompile>
-        <ResFiles Include="pfreepanic.res">
+        <ResFiles Include="pfreepanic64.res">
+            <ModuleName>pfreepanic64.res</ModuleName>
             <BuildOrder>1</BuildOrder>
         </ResFiles>
         <CppCompile Include="Unit1.cpp">
@@ -190,7 +191,7 @@
         <BorlandProject>
             <CPlusPlusBuilder.Personality>
                 <Source>
-                    <Source Name="MainSource">pfreepanic.cpp</Source>
+                    <Source Name="MainSource">pfreepanic64.cpp</Source>
                 </Source>
                 <VersionInfo>
                     <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
@@ -280,9 +281,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Release\pfreepanic.exe" Configuration="Release" Class="ProjectOutput">
+                <DeployFile LocalName="Release\pfreepanic64.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win64">
-                        <RemoteName>pfreepanic.exe</RemoteName>
+                        <RemoteName>pfreepanic64.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -296,7 +297,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="pfreepanic.res" Configuration="Release" Class="ProjectFile">
+                <DeployFile LocalName="pfreepanic64.res" Configuration="Release" Class="ProjectFile">
                     <Platform Name="Win64">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
