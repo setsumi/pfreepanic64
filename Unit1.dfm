@@ -1,4 +1,4 @@
-object Form1: TForm1
+object FormPfreepanic64: TFormPfreepanic64
   Left = 0
   Top = 0
   Caption = 'pfree panic 64'

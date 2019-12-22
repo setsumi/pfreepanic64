@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 
 #include <vcl.h>
 
@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
-TForm1 *Form1;
+TFormPfreepanic64 *FormPfreepanic64;
 
 struct TermWnd {
 	UnicodeString wndtitle;
@@ -90,13 +90,13 @@ bool GrabConsole(DWORD procID)
 
 	lastpos.X = 0;
 	lastpos.Y = 0;
-    Form1->TimerConsole->Enabled = true;
+    FormPfreepanic64->TimerConsole->Enabled = true;
 	return true;
 }
 //---------------------------------------------------------------------------
 void ReleaseConsole()
 {
-    Form1->TimerConsole->Enabled = false;
+    FormPfreepanic64->TimerConsole->Enabled = false;
 	FreeConsole();
 }
 //---------------------------------------------------------------------------
@@ -191,13 +191,13 @@ UnicodeString WinFormatError(DWORD errNo)
 
 void Error(UnicodeString msg)
 {
-	Form1->Memo1->Color = clRed;
-	Form1->Memo1->Font->Color = clYellow;
-	Form1->Memo1->Font->Style = TFontStyles() << fsBold;
+	FormPfreepanic64->Memo1->Color = clRed;
+	FormPfreepanic64->Memo1->Font->Color = clYellow;
+	FormPfreepanic64->Memo1->Font->Style = TFontStyles() << fsBold;
 
-	Form1->Memo1->Lines->Text = UnicodeString(L"ERROR:\n") + msg;
+	FormPfreepanic64->Memo1->Lines->Text = UnicodeString(L"ERROR:\n") + msg;
 
-	Form1->Memo1->SetFocus();
+	FormPfreepanic64->Memo1->SetFocus();
 	MessageBeep(MB_ICONHAND);
 }
 
@@ -240,7 +240,7 @@ void TogglePFree(bool off)
 {
 	Working = true;
 	ReleaseConsole();
-	Form1->Memo1->Clear();
+	FormPfreepanic64->Memo1->Clear();
 	UnicodeString txt;
 	UnicodeString txt1;
 	UnicodeString txt2;
@@ -312,7 +312,7 @@ void TogglePFree(bool off)
 				baseAddr = info.lpBaseOfDll;
 				//debug
 				txt.sprintf(L"%s  base_addr: 0x%llX", szModName, baseAddr);
-				Form1->Memo1->Lines->Add(txt);
+				FormPfreepanic64->Memo1->Lines->Add(txt);
 
 				break;
 			}
@@ -324,7 +324,7 @@ void TogglePFree(bool off)
 	}
 	//debug
 	txt.sprintf(L"target_addr: 0x%llX", (BYTE*)baseAddr + MEM_OFFSET + data1_offset[Game]);
-	Form1->Memo1->Lines->Add(txt);
+	FormPfreepanic64->Memo1->Lines->Add(txt);
 
 	// read current data
 	if (!ReadProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], data0, DATA0_SIZE, NULL)) {
@@ -353,9 +353,9 @@ void TogglePFree(bool off)
 				goto getout;
 			}
 			// notify
-			Form1->Caption = L"3-Song Mode";
-			if (Form1->chkOSDEnabled->Checked)
-				pOSD->SendMessage(L"3-Song Mode", Form1->udOSDDuration->Position);
+			FormPfreepanic64->Caption = L"3-Song Mode";
+			if (FormPfreepanic64->chkOSDEnabled->Checked)
+				pOSD->SendMessage(L"3-Song Mode", FormPfreepanic64->udOSDDuration->Position);
 		} else {
 			// write PFree ON
 			if (!WriteProcessMemory(hProc, (BYTE*)baseAddr + MEM_OFFSET + data0_offset[Game], pf_on0[Game], DATA0_SIZE, NULL)) {
@@ -371,9 +371,9 @@ void TogglePFree(bool off)
 				goto getout;
 			}
 			// notify
-			Form1->Caption = L"Pfree Mode";
-			if (Form1->chkOSDEnabled->Checked)
-				pOSD->SendMessage(L"Pfree Mode", Form1->udOSDDuration->Position);
+			FormPfreepanic64->Caption = L"Pfree Mode";
+			if (FormPfreepanic64->chkOSDEnabled->Checked)
+				pOSD->SendMessage(L"Pfree Mode", FormPfreepanic64->udOSDDuration->Position);
 		}
 	} else
 	// ON test
@@ -386,15 +386,15 @@ void TogglePFree(bool off)
 		}
 		GrabConsole(procID);
 		// notify
-		Form1->Caption = L"1-Song Mode";
-		if (Form1->chkOSDEnabled->Checked)
-			pOSD->SendMessage(L"1-Song Mode", Form1->udOSDDuration->Position);
+		FormPfreepanic64->Caption = L"Ending Game";
+		if (FormPfreepanic64->chkOSDEnabled->Checked)
+			pOSD->SendMessage(L"Ending Game", FormPfreepanic64->udOSDDuration->Position);
 	} else
 	{
 		Error(L"Invalid game data. Press [Information...] for supported game version.");
 		goto getout;
 	}
-	Form1->MemoResetStyle();
+	FormPfreepanic64->MemoResetStyle();
 	//debug
 //	txt.sprintf(L"data0: %02X %02X %02X %02X %02X %02X", data0[0],data0[1],data0[2],data0[3],data0[4],data0[5]);
 //	txt1.sprintf(L"data1: %02X %02X", data1[0],data1[1]);
@@ -467,24 +467,24 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 		if (nCode == HC_ACTION && wParam == WM_KEYDOWN)
 		{
-			if (Form1->edtKey->Tag) {
+			if (FormPfreepanic64->edtKey->Tag) {
 				Key = kbdStruct.vkCode;
-				Form1->Memo1->SetFocus();
-				Form1->Save();
+				FormPfreepanic64->Memo1->SetFocus();
+				FormPfreepanic64->Save();
 			} else
-			if (Form1->edtTermKey->Tag) {
+			if (FormPfreepanic64->edtTermKey->Tag) {
 				TermKey = kbdStruct.vkCode;
-				Form1->Memo1->SetFocus();
-				Form1->Save();
+				FormPfreepanic64->Memo1->SetFocus();
+				FormPfreepanic64->Save();
 			} else
 			if (kbdStruct.vkCode == Key && !Working)
 			{
-				Form1->Memo1->SetFocus();
+				FormPfreepanic64->Memo1->SetFocus();
 				TogglePFree();
 			} else
 			if (kbdStruct.vkCode == TermKey && !Terminating)
 			{
-				Form1->Memo1->SetFocus();
+				FormPfreepanic64->Memo1->SetFocus();
 				TerminateGame();
 			}
 		}
@@ -495,7 +495,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 }
 
 //---------------------------------------------------------------------------
-__fastcall TForm1::TForm1(TComponent* Owner)
+__fastcall TFormPfreepanic64::TFormPfreepanic64(TComponent* Owner)
 	: TForm(Owner)
 {
 	pGamesList = new TStringList();
@@ -521,7 +521,7 @@ __fastcall TForm1::TForm1(TComponent* Owner)
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::FormDestroy(TObject *Sender)
+void __fastcall TFormPfreepanic64::FormDestroy(TObject *Sender)
 {
 	if (hHook) UnhookWindowsHookEx(hHook);
 	Save();
@@ -533,7 +533,7 @@ void __fastcall TForm1::FormDestroy(TObject *Sender)
 }
 
 //---------------------------------------------------------------------------
-void TForm1::Load()
+void TFormPfreepanic64::Load()
 {
 	TIniFile *ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
 	Key = (DWORD)ini->ReadInteger(L"GENERAL", L"Hotkey", 106); // by default Numpad * key
@@ -548,7 +548,7 @@ void TForm1::Load()
 }
 
 //---------------------------------------------------------------------------
-void TForm1::Save()
+void TFormPfreepanic64::Save()
 {
 	TIniFile *ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
 	ini->WriteInteger(L"GENERAL", L"Hotkey", (int)Key);
@@ -561,7 +561,7 @@ void TForm1::Save()
 }
 
 //---------------------------------------------------------------------------
-void TForm1::MemoResetStyle()
+void TFormPfreepanic64::MemoResetStyle()
 {
 	Memo1->Color = clWindow;
 	Memo1->Font->Color = clWindowText;
@@ -569,32 +569,32 @@ void TForm1::MemoResetStyle()
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::edtKeyEnter(TObject *Sender)
+void __fastcall TFormPfreepanic64::edtKeyEnter(TObject *Sender)
 {
 	edtKey->Tag = 1;
 	edtKey->Text = L"Press single key";
 }
 //---------------------------------------------------------------------------
-void __fastcall TForm1::edtKeyExit(TObject *Sender)
+void __fastcall TFormPfreepanic64::edtKeyExit(TObject *Sender)
 {
 	edtKey->Tag = 0;
 	edtKey->Text = IntToStr((int)Key);
 }
 //---------------------------------------------------------------------------
-void __fastcall TForm1::edtTermKeyEnter(TObject *Sender)
+void __fastcall TFormPfreepanic64::edtTermKeyEnter(TObject *Sender)
 {
 	edtTermKey->Tag = 1;
 	edtTermKey->Text = L"Press single key";
 }
 //---------------------------------------------------------------------------
-void __fastcall TForm1::edtTermKeyExit(TObject *Sender)
+void __fastcall TFormPfreepanic64::edtTermKeyExit(TObject *Sender)
 {
 	edtTermKey->Tag = 0;
 	edtTermKey->Text = IntToStr((int)TermKey);
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::btnInfoClick(TObject *Sender)
+void __fastcall TFormPfreepanic64::btnInfoClick(TObject *Sender)
 {
 	ShowMessage(L"How to use:\n"
 		"\t1. Run the app\n"
@@ -607,7 +607,8 @@ void __fastcall TForm1::btnInfoClick(TObject *Sender)
 		"\tat least 80x25 characters.\n"
 		"\n"
 		"PFree mode is supported on:\n"
-		"\tMUSECA 1+1/2 (2018-07-30)\n\n"
+		"\tMUSECA 1+1/2 (2018-07-30)\n"
+        "\n"
 		"Terminate game is supported on:\n"
 		"\tSOUND VOLTEX IV HEAVENLY HAVEN 1\n"
 		"\tSOUND VOLTEX III GRAVITY WARS\n"
@@ -617,12 +618,15 @@ void __fastcall TForm1::btnInfoClick(TObject *Sender)
 		"\tMUSECA\n"
 		"\tBeatStream\n"
 		"\tGITADORA Tri-Boost Re:EVOLVE\n"
-		"\tGITADORA Matixx"
+		"\tGITADORA Matixx\n"
+		"\n"
+		"Command line parameters:\n"
+		"\tclose - close program if running"
 		);
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::btnOSDTestClick(TObject *Sender)
+void __fastcall TFormPfreepanic64::btnOSDTestClick(TObject *Sender)
 {
 	if (!pOSD->SendMessage(L"Test Message", udOSDDuration->Position)) {
 		Error(L"Unable to send message. Press [?] for instructions.");
@@ -630,7 +634,7 @@ void __fastcall TForm1::btnOSDTestClick(TObject *Sender)
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::btnOSDHelpClick(TObject *Sender)
+void __fastcall TFormPfreepanic64::btnOSDHelpClick(TObject *Sender)
 {
 	ShowMessage(L"How to use OSD:\n"
 		"\t1. Place dx9osd64.dll in the game folder\n"
@@ -644,9 +648,22 @@ void __fastcall TForm1::btnOSDHelpClick(TObject *Sender)
 }
 
 //---------------------------------------------------------------------------
-void __fastcall TForm1::TimerConsoleTimer(TObject *Sender)
+void __fastcall TFormPfreepanic64::TimerConsoleTimer(TObject *Sender)
 {
 	PollConsole(hConOut);
+}
+
+//---------------------------------------------------------------------------
+void __fastcall TFormPfreepanic64::WndProc(TMessage& Message)
+{
+	if (Message.Msg == WM_APP+1)
+	{
+		Close();
+	}
+	else
+	{
+		TForm::WndProc(Message);
+	}
 }
 
 //---------------------------------------------------------------------------

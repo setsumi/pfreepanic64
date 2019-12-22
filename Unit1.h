@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+﻿//---------------------------------------------------------------------------
 
 #ifndef Unit1H
 #define Unit1H
@@ -10,7 +10,7 @@
 #include <ExtCtrls.hpp>
 #include <Vcl.ComCtrls.hpp>
 //---------------------------------------------------------------------------
-class TForm1 : public TForm
+class TFormPfreepanic64 : public TForm
 {
 __published:	// IDE-managed Components
 	TMemo *Memo1;
@@ -38,14 +38,15 @@ __published:	// IDE-managed Components
 	void __fastcall btnOSDTestClick(TObject *Sender);
 	void __fastcall TimerConsoleTimer(TObject *Sender);
 private:	// User declarations
+	void __fastcall WndProc(TMessage& Message);
 public:		// User declarations
 	void Load();
 	void Save();
 	void MemoResetStyle();
 
-	__fastcall TForm1(TComponent* Owner);
+	__fastcall TFormPfreepanic64(TComponent* Owner);
 };
 //---------------------------------------------------------------------------
-extern PACKAGE TForm1 *Form1;
+extern PACKAGE TFormPfreepanic64 *FormPfreepanic64;
 //---------------------------------------------------------------------------
 #endif
